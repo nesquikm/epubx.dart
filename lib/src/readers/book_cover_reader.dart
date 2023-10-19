@@ -15,17 +15,27 @@ class BookCoverReader {
 
     var coverMetaItem = metaItems.firstWhereOrNull(
         (EpubMetadataMeta metaItem) =>
-            metaItem.Name != null && metaItem.Name!.toLowerCase() == 'cover');
+            (metaItem.Name != null &&
+                metaItem.Name!.toLowerCase() == 'cover') ||
+            (metaItem.Attributes != null &&
+                metaItem.Attributes!.entries.any((attribute) =>
+                    attribute.key.toLowerCase() == 'name' &&
+                    attribute.value.toLowerCase() == 'cover')));
     if (coverMetaItem == null) return null;
-    if (coverMetaItem.Content == null || coverMetaItem.Content!.isEmpty) {
+
+    final content =
+        (coverMetaItem.Content != null && coverMetaItem.Content!.isNotEmpty)
+            ? coverMetaItem.Content
+            : coverMetaItem.Attributes?['content'];
+
+    if (content == null || content.isEmpty) {
       throw Exception(
           'Incorrect EPUB metadata: cover item content is missing.');
     }
 
     var coverManifestItem = bookRef.Schema!.Package!.Manifest!.Items!
         .firstWhereOrNull((EpubManifestItem manifestItem) =>
-            manifestItem.Id!.toLowerCase() ==
-            coverMetaItem.Content!.toLowerCase());
+            manifestItem.Id!.toLowerCase() == content.toLowerCase());
     if (coverManifestItem == null) {
       throw Exception(
           'Incorrect EPUB manifest: item with ID = \"${coverMetaItem.Content}\" is missing.');
